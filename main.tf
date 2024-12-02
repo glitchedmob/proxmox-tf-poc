@@ -28,3 +28,51 @@ resource "proxmox_virtual_environment_network_linux_bridge" "external_bridge" {
   gateway    = "172.30.64.1"
   ports      = ["eth0"]
 }
+
+resource "proxmox_virtual_environment_vm" "debian_vm" {
+  node_name = local.proxmox_node_name
+  vm_id     = 101
+  cpu {
+    cores = 2
+    type  = "x86-64-v2-AES"
+  }
+  memory {
+    dedicated = 4096
+  }
+  disk {
+    datastore_id = "local-lvm"
+    interface    = "scsi0"
+    size         = 32
+    file_id      = proxmox_virtual_environment_download_file.release_20230531_debian_12_bookworm_qcow2_img.id
+  }
+  operating_system {
+    type = "l26"
+  }
+  initialization {
+    ip_config {
+      ipv4 {
+        address = "dhcp"
+      }
+    }
+
+    user_account {
+      keys     = [trimspace(tls_private_key.debian_vm_key.public_key_openssh)]
+      password = random_password.debian_vm_password.result
+      username = "debian"
+    }
+  }
+  network_device {
+    bridge = proxmox_virtual_environment_network_linux_bridge.external_bridge.name
+  }
+}
+
+resource "random_password" "debian_vm_password" {
+  length           = 8
+  override_special = "_%@"
+  special          = true
+}
+
+resource "tls_private_key" "debian_vm_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
