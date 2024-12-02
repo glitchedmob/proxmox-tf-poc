@@ -1,3 +1,7 @@
 .idea/
 .terraform/
 env.tfvars
+terraform.tfstate
+.terraform.tfstate.lock.info
+
+isos/
